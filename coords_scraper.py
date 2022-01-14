@@ -1,12 +1,22 @@
+from typing import Tuple
+
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from lxml import etree
 
 
-def get_school_coord(rspo: int) -> None:
+def get_school_coord(rspoValue: int) -> Tuple[float, float]:
+    """Scrap school coords from https://rspo.gov.pl/rspo/{rspoValue}
 
-    response = requests.get(f"https://rspo.gov.pl/rspo/{rspo}", verify=False)
+    Args:
+        rspo (int): The rspo value
+
+    Returns:
+        Tuple[float, float]: School coords (LAT, LNG)
+    """
+
+    response = requests.get(f"https://rspo.gov.pl/rspo/{rspoValue}", verify=False)
     soup = BeautifulSoup(response.text, "html.parser")
     dom = etree.HTML(str(soup))
     location = dom.xpath(
