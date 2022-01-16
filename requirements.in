@@ -1,2 +1,5 @@
 black[jupyter]
 isort
+bs4
+requests
+pandas
