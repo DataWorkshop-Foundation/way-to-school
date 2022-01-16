@@ -1,9 +1,7 @@
+import re
 from typing import Tuple
 
-import pandas as pd
 import requests
-from bs4 import BeautifulSoup
-from lxml import etree
 
 
 def get_school_coord(rspoValue: int) -> Tuple[float, float]:
@@ -16,26 +14,10 @@ def get_school_coord(rspoValue: int) -> Tuple[float, float]:
         Tuple[float, float]: School coords (LAT, LNG)
     """
 
+    MAP_POINT_PATTERN = re.compile(".*var map_point = (.*?);.*")
     response = requests.get(f"https://rspo.gov.pl/rspo/{rspoValue}", verify=False)
-    soup = BeautifulSoup(response.text, "html.parser")
-    dom = etree.HTML(str(soup))
-    location = dom.xpath(
-        "/html/body/div[1]/section/div/div/div[1]/div[2]/div/div[2]/div[9]/script"
-    )[0].text.strip()
 
-    location = location.replace("var map_point =  ", "")
-    location = location.replace(";", "")
-    location = location.replace(" ", "")
-
-    location = location.replace("id", '"id"')
-    location = location.replace("lat", '"lat"')
-    location = location.replace("lng", '"lng"')
-    coords = eval(location)
-
-    return float(coords["lat"]), float(coords["lng"])
-
-
-if __name__ == "__main__":
-    df = pd.read_csv("data/school.csv")
-    df["coords"] = df["Numer RSPO"].apply(lambda row: get_school_coord(row))
-    df.to_csv("data/newSchool.csv", encoding="utf-8")
+    location = MAP_POINT_PATTERN.search(response.text).groups()[0]
+    lat = re.search(".*lat:([\d\.]+).*", location).groups()[0]
+    lng = re.search(".*lng:([\d\.]+).*", location).groups()[0]
+    return float(lat), float(lng)
