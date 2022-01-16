@@ -1,3 +1,5 @@
 black[jupyter]
 isort
 geopandas
+jupyter
+plotly
