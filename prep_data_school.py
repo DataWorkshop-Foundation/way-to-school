@@ -29,8 +29,10 @@ def prep_data(path_input):
         df.to_csv(path_input.replace(".csv", "_prep.csv"), index=False, encoding="utf-8")
 
     except FileNotFoundError:
-        print("Nie znaleziono pliku.")
+        print("Not found file.")
 
+    else:
+        print(f'Dataset created, PATH: {path_input.replace(".csv", "_prep.csv")}')
 
 def marge_area_population(path_input):
     try:
@@ -91,4 +93,7 @@ def marge_area_population(path_input):
             df_full.to_csv(full_path, index=False, encoding="utf-8")
 
     except FileNotFoundError:
-        print("Nie znaleziono pliku.")
+        print("Not found files.")
+
+    else:
+        print(f'Magres successfull, PATH: {path_input.replace(".csv", "_prep.csv")}')
