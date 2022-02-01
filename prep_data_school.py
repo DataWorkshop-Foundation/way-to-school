@@ -1,21 +1,47 @@
+import os.path
 from pathlib import PurePath, PurePosixPath
+from typing import List
 
 import pandas as pd
 import unidecode
 
 
-def clean_text(x):
-    return str(x).replace("=", "").replace('"', "")
+def clean_text(input_text: str) -> str:  # nazwa argumentu nic nie mówi
+    return str(input_text).replace("=", "").replace('"', "")
 
 
-def prep_data(path_input):
+def remove_characters(input_text: str, chars_to_remove: List[str]) -> str:
+    for char_to_remove in chars_to_remove:
+        input_text = input_text.replace(char_to_remove, "")
+    return input_text
+
+
+def prep_data(path_input: str, path_output: Optional[str] = None):
+    """Method for data preparation
+
+    Parameters
+    ----------
+    path_input
+        Input csv file path
+    """
+
+    # assert os.path.exists(path_input), "This file does not exist!"
+    if not os.path.exists(path_input):
+        # raise FileExistsError
+        print("Nie istnieje!")
+
+    if path_output is None:
+        path_output = path_input.replace(".csv", "_prep.csv")
+
     try:
         df = pd.read_csv(path_input)
 
         col_name = {}
 
-        for i in df.columns:
+        for i in df.columns: # for col_name in ...
             col_name[i] = unidecode.unidecode(i).replace(" ", "_").lower()
+
+        col_name = {x: unidecode.unidecode(x).replace(" ", "_").lower() for x in df.columns}
 
         df.rename(columns=col_name, inplace=True)
 
@@ -36,6 +62,10 @@ def prep_data(path_input):
 
 
 def marge_area_population(path_input):
+
+    # data_files = ("populations_area_province", "populations_area_province")
+    # assert all([os.path.exists(os.path.join(data_file)) for data_file in data_files])
+
     try:
         p = PurePath(path_input)
         path = p.parents[0]
@@ -97,4 +127,12 @@ def marge_area_population(path_input):
         print("Not found files.")
 
     else:
-        print(f'Magres successfull, PATH: {path_input.replace(".csv", "_prep.csv")}')
+        output_path = path_input.replace(".csv", "_prep.csv")
+        print(f'Magres successfull, PATH: {output_path=}')
+
+
+if __name__ == "__main__":
+    # tu robimy coś jeśli to jest nasz punkt wejścia
+    path = "abc" # tu chwytamy z argparsa ścieżkę
+    prep_data(path)
+    marge_area_population(path)
