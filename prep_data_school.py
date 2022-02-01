@@ -34,6 +34,7 @@ def prep_data(path_input):
     else:
         print(f'Dataset created, PATH: {path_input.replace(".csv", "_prep.csv")}')
 
+
 def marge_area_population(path_input):
     try:
         p = PurePath(path_input)
