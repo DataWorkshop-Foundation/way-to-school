@@ -3,3 +3,6 @@ isort
 geopandas
 jupyter
 plotly
+bs4
+requests
+pandas
