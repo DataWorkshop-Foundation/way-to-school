@@ -21,7 +21,7 @@ def remove_characters(input_text: str, chars_to_remove: List[str]) -> str:
 
     for char_to_remove in chars_to_remove:
         input_text = input_text.replace(char_to_remove, "")
-    return input_text
+    return input_text.strip()
 
 
 def prep_data(path_input: str, path_output: Optional[str] = None):
@@ -59,12 +59,10 @@ def prep_data(path_input: str, path_output: Optional[str] = None):
 
         df.rename(columns=col_name, inplace=True)
 
+        df[["gmina_typ", "gmina_cat"]] = df["gmina"].str.split(" ", 1, expand=True)
+
         for col in df.select_dtypes(["object"]).columns:
-            df[col] = df[col].map(lambda x: remove_characters(str(x), ['"', "="]))
-
-        df["gmina_typ"] = df.gmina.map(lambda x: x.split("(")[-1].strip())
-
-        df["gmina_cat"] = df.gmina.map(lambda x: x.split("(")[0].strip())
+            df[col] = df[col].map(lambda x: remove_characters(str(x), ['"', "=", "(", ")"]))
 
         df.to_csv(path_output, index=False, encoding="utf-8")
 
