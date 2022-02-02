@@ -1,5 +1,8 @@
+import argparse
 import os.path
+import sys
 from pathlib import PurePath, PurePosixPath
+from posixpath import abspath, dirname
 from typing import List, Optional
 
 import pandas as pd
@@ -135,7 +138,17 @@ def marge_area_population(path_input: str, path_output: Optional[str] = None):
 
 
 if __name__ == "__main__":
-    # tu robimy coś jeśli to jest nasz punkt wejścia
-    path = "abc"  # tu chwytamy z argparsa ścieżkę
-    prep_data(path)
-    marge_area_population(path)
+
+    my_parser = argparse.ArgumentParser(description="List the content of a folder")
+    my_parser.add_argument("Path", metavar="path", type=str, help="Add path to prep dataset")
+
+    args = my_parser.parse_args()
+
+    input_path = args.Path
+    input_path = abspath(dirname(input_path))
+
+    if not os.path.exists(input_path):
+        print("Sciezka nie istnieje!")
+    else:
+        prep_data(input_path)
+        marge_area_population(input_path)
