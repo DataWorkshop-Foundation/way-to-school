@@ -6,3 +6,6 @@ pandas
 unidecode
 seaborn
 scipy
+geopandas
+jupyter
+plotly
