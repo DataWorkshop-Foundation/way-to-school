@@ -56,5 +56,5 @@ def get_coords_from_osm(city: str, street: str, address: str, orginal_postcode: 
                 else:
                     coordinates = response["features"][0]["geometry"]["coordinates"]
             except AttributeError:
-                logging.warning(f"Could not find location details for https://rspo.gov.pl/rspo/{query}")          
+                logging.warning(f"Could not find location details for https://rspo.gov.pl/rspo/{query}")
     return coordinates
