@@ -1,4 +1,3 @@
-import csv
 import logging
 import random
 import re
@@ -38,6 +37,7 @@ def get_coords_from_osm(city: str, street: str, address: str, orginal_postcode: 
     query = f"{city} {street} {address} {orginal_postcode}"
     response = requests.get(f"https://photon.komoot.io/api/?q={query}").json()
     is_school = False
+    coordinates = [None, None]
     for i in range(len(response["features"])):
         if not is_school:
             try:
@@ -56,6 +56,5 @@ def get_coords_from_osm(city: str, street: str, address: str, orginal_postcode: 
                 else:
                     coordinates = response["features"][0]["geometry"]["coordinates"]
             except AttributeError:
-                logging.warning(f"Could not find location details for https://rspo.gov.pl/rspo/{query}")
-                coordinates = [None, None]
+                logging.warning(f"Could not find location details for https://rspo.gov.pl/rspo/{query}")          
     return coordinates

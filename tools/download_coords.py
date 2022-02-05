@@ -10,7 +10,7 @@ from coords_scraper import get_coords_from_osm
 # Disable https warning
 urllib3.disable_warnings()
 
-CHECKPOINT = 10
+CHECKPOINT = 50
 
 if __name__ == "__main__":
     df = pd.read_csv("data/school_prep.csv", index_col=0)
@@ -19,11 +19,10 @@ if __name__ == "__main__":
         lat, lng = get_coords_from_osm(
             row["miejscowosc"], street=row["ulica"], address=row["numer_budynku"], orginal_postcode=row["kod_pocztowy"]
         )
-        time.sleep(3)
+        time.sleep(2)
 
         df.loc[index, "lat"] = lat
         df.loc[index, "lng"] = lng
 
         if index % CHECKPOINT == 0:
-            print("DUMP")
             df.to_csv("data/school_with_coords.csv")
