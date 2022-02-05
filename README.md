@@ -22,3 +22,11 @@ make requirements
 ```shell
 pip install pip-tools
 ```
+
+## Data
+
+Download and preprocess the necessary data
+
+```shell
+make data
+```
