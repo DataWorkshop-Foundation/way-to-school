@@ -31,30 +31,3 @@ def get_school_coord(
         logging.warning(f"Could not find location details for https://rspo.gov.pl/rspo/{rspo_value}")
         return
     return float(lat), float(lng)
-
-
-def get_coords_from_osm(city: str, street: str, address: str, orginal_postcode: str):
-    query = f"{city} {street} {address} {orginal_postcode}"
-    response = requests.get(f"https://photon.komoot.io/api/?q={query}").json()
-    is_school = False
-    coordinates = [None, None]
-    for i in range(len(response["features"])):
-        if not is_school:
-            try:
-                if response["features"][i]["properties"]["osm_value"] in [
-                    "college",
-                    "kindergarten",
-                    "language_school",
-                    "library",
-                    "toy_library",
-                    "music_school",
-                    "school",
-                    "university",
-                ]:
-                    coordinates = response["features"][i]["geometry"]["coordinates"]
-                    is_school = True
-                else:
-                    coordinates = response["features"][0]["geometry"]["coordinates"]
-            except AttributeError:
-                logging.warning(f"Could not find location details for https://rspo.gov.pl/rspo/{query}")
-    return coordinates
