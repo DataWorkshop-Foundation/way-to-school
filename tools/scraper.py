@@ -8,10 +8,9 @@ import requests
 
 
 class CoordScraper:
-    def __init__(self, filepath: str, timeout: Optional[int] = 1, checkpoint: Optional[int] = 50) -> None:
+    def __init__(self, filepath: str, timeout: Optional[int] = 1) -> None:
         assert os.path.exists(filepath), f"Provided {filepath} does not exist."
 
-        self.checkpoint = checkpoint
         self.filepath = filepath
         self.df = pd.read_csv(self.filepath)
         self.timeout = timeout
@@ -26,7 +25,7 @@ class CoordScraper:
             "university",
         ]
 
-    def create_checkpoint(self):
+    def create_checkpoint(self) -> None:
         self.df.to_csv(self.filepath)
         logging.info("Save data...")
         self.df = pd.read_csv(self.filepath)
@@ -39,20 +38,21 @@ class CoordScraper:
         logging.info("Query: ", query)
         response = requests.get(f"https://photon.komoot.io/api/?q={query}").json()
 
-        for idx, feature in enumerate(response["features"]):
-            if feature["properties"]["osm_value"] in self.osm_values:
-                coords = [coord for coord in response["features"][idx]["geometry"]["coordinates"]]
-
-            if feature["properties"]["postcode"] != query_dict["kod_pocztowy"]:
-                response["features"].pop(idx)
-
-        if len(response["features"]) == 1:
-            coords = [coord for coord in response["features"][0]["geometry"]["coordinates"]]
-        if coords != 2:
+        if len(response["features"]) == 0:
             return None, None
-        return coords
 
-    def get_from_osm(self):
+        for idx, feature in enumerate(response["features"]):
+            if all(
+                [
+                    feature["properties"]["osm_value"] in self.osm_values,
+                    feature["properties"]["postcode"] == query_dict["kod_pocztowy"],
+                ]
+            ):
+                return [coord for coord in response["features"][idx]["geometry"]["coordinates"]]
+
+        return [coord for coord in response["features"][0]["geometry"]["coordinates"]]
+
+    def get_from_osm(self, checkpoint: Optional[int] = 50):
         try:
             for idx, row in self.df.iterrows():
                 query_dict = self.query(
@@ -68,9 +68,8 @@ class CoordScraper:
                 self.df.loc[idx, "lat"] = lat
                 self.df.loc[idx, "lng"] = lng
 
-                if idx % self.checkpoint == 0:
+                if idx % checkpoint == 0:
                     self.create_checkpoint()
-                    exit(0)
         except Exception as e:
             logging.warning(e)
 
