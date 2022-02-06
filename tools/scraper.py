@@ -43,7 +43,7 @@ class CoordScraper:
         return {value: str(row[value]) for value in list(values)}
 
     def get_coords(self, query_dict: dict) -> List[float]:
-        """Create request based on specific details
+        """Download coords based on specific query details
 
         Parameters
         ----------
