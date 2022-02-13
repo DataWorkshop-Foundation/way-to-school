@@ -1,8 +1,9 @@
 import logging
 import os
 import time
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Union
 
+import jsonlines
 import pandas as pd
 import requests
 from tqdm import tqdm
@@ -45,30 +46,53 @@ class CoordScraper:
         logging.info(f"Remaining {sum(data[['lat', 'lng']].isna().any(axis=1))} empty coords.")
 
     @staticmethod
+    def __save_jsonln(row_idx: int, data, filepath: str) -> None:
+        logging.info(f"Saving data to {filepath=}")
+        with jsonlines.open(filepath, mode="a") as writer:
+            writer.write({row_idx: data})
+
+    @staticmethod
     def __get_query_dict(row: pd.Series, field_names: Iterable[str]) -> Dict[str, str]:
         return {field_name: str(row.get(field_name, "")) for field_name in field_names}
 
-    def get_coords(self, query_dict: Dict[str, str]) -> List[float]:
+    @staticmethod
+    def __get_api_results(query_dict: Dict[str, str]) -> Dict[str, str]:
+        query = " ".join(query_dict.values())
+        logging.debug(f"Query: {query}")
+        response = requests.get(f"https://photon.komoot.io/api/?q={query}").json()
+        return response
+
+    @staticmethod
+    def __row_has_coords(row: pd.Series) -> bool:
+        return not row[["lat", "lng"]].isna().any()
+
+    @staticmethod
+    def __load_api_response(row_idx: int, output_filepath: str) -> Union[None, Dict]:
+        with jsonlines.open(output_filepath) as reader:
+            for obj in reader.iter():
+                if row_idx in obj.keys():
+                    return obj[row_idx]
+                return None
+
+    def get_coords(self, query_dict: Dict[str, str], response_dict: Dict[str, str]) -> List[float]:
         """Download coords based on specific query details
 
         Parameters
         ----------
         query_dict : Dict[str, str]
             Query details
-
+        response_dict: Dict[str, str]
+            Api response
         Returns
         -------
         List[float]
             Returns school coordinates
         """
-        query = " ".join(query_dict.values())
-        logging.debug(f"Query: {query}")
-        response = requests.get(f"https://photon.komoot.io/api/?q={query}").json()
 
-        if not response.get("features"):
+        if not response_dict.get("features"):
             return None, None
 
-        for feature in response["features"]:
+        for feature in response_dict["features"]:
             if all(
                 [
                     feature["properties"]["osm_value"] in self.osm_values,
@@ -77,24 +101,26 @@ class CoordScraper:
             ):
                 return [coord for coord in feature["geometry"]["coordinates"]]
 
-        return [coord for coord in response["features"][0]["geometry"]["coordinates"]]
+        return [coord for coord in response_dict["features"][0]["geometry"]["coordinates"]]
 
-    @staticmethod
-    def __row_has_coords(row: pd.Series) -> bool:
-        return not row[["lat", "lng"]].isna().any()
-
-    def process_csv(self, filepath: str, checkpoint: int = 50):
+    def process_csv(self, filepath: str, output_filepath: str, checkpoint: int = 50):
         """Collect coordinates for .csv dataset
 
         Parameters
         ----------
         filepath: str
             File to process
+        output_filepath: str
+            Filepath to save api response
         checkpoint: int
             Number of rows after which file will be overwritten
         """
 
         assert os.path.exists(filepath), f"Provided {filepath} does not exist."
+        if not os.path.exists(output_filepath):
+            logging.debug(f"Provided {filepath} does not exists. Create file...")
+            _ = open(output_filepath, "w")
+
         data = pd.read_csv(filepath)
 
         for col in ("lat", "lng"):
@@ -112,7 +138,11 @@ class CoordScraper:
                 row=row,
                 field_names=self.FIELD_NAMES,
             )
-            lat, lng = self.get_coords(query_dict)
+            query_response = self.__load_api_response(row_idx, output_filepath)
+            if query_response is None:
+                query_response = self.__get_api_results(query_dict=query_dict)
+                self.__save_jsonln(row_idx, query_response, output_filepath)
+            lat, lng = self.get_coords(query_dict, query_response)
 
             if lat and lng:
                 data.iloc[row_idx, data.columns.get_indexer(["lat", "lng"])] = lat, lng
@@ -124,6 +154,7 @@ class CoordScraper:
 if __name__ == "__main__":
     scraper = CoordScraper(timeout=1)
     scraper.process_csv(
-        filepath="/home/lsawaniewski/Documents/private/docs/DataWorkshop/DW_Olsztyn/repos/way-to-school/data/school_prep.csv",
+        filepath="data/school_prep.csv",
+        output_filepath="data/output.jsonl",
         checkpoint=50,
     )
