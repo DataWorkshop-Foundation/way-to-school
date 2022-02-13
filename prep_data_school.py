@@ -60,7 +60,7 @@ def prep_data(path_input: str, path_output: Optional[str] = None):
 
     df.rename(columns=col_name, inplace=True)
 
-    df[["gmina_nazwa", "gmina_typ"]] = df["gmina"].str.split(" ", 1, expand=True)
+    df[["gmina_nazwa", "gmina_typ"]] = df["gmina"].str.split("(", 1, expand=True)
 
     for col in df.select_dtypes(["object"]).columns:
         df[col] = df[col].map(lambda x: remove_characters(str(x), ['"', "=", "(", ")"]))
