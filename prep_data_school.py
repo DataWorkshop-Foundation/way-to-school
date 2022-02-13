@@ -60,7 +60,7 @@ def prep_data(path_input: str, path_output: Optional[str] = None):
 
     df.rename(columns=col_name, inplace=True)
 
-    df[["gmina_typ", "gmina_cat"]] = df["gmina"].str.split(" ", 1, expand=True)
+    df[["gmina_nazwa", "gmina_typ"]] = df["gmina"].str.split(" ", 1, expand=True)
 
     for col in df.select_dtypes(["object"]).columns:
         df[col] = df[col].map(lambda x: remove_characters(str(x), ['"', "=", "(", ")"]))
@@ -126,7 +126,7 @@ def marge_area_population(path_input: str, path_output: Optional[str] = None):
     df_full.to_csv(os.path.join(path_output, "school_prep.csv"), index=False, encoding="utf-8")
 
     output_path = os.path.join(path_output, "school_prep.csv")
-    print(f"Magres successfull, {output_path=}")
+    print(f"Megres successfull, {output_path=}")
 
 
 if __name__ == "__main__":
