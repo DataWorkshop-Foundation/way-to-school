@@ -1,9 +1,12 @@
 import logging
 import os
+import time
 from typing import Dict, Iterable, Optional
 
 import jsonlines
+import pandas as pd
 import requests
+from tqdm import tqdm
 
 
 class CoordScraper:
@@ -55,16 +58,16 @@ class CoordScraper:
         with jsonlines.open(results_filepath, "r") as reader:
             self.api_results = {item[self.ID] for item in reader}
 
-        with jsonlines.open(self.filepath, "r") as reader:
-            for idx, row in enumerate(reader):
-                logging.info(f"Row: {idx}")
-                if self.__check_row(rspo_id=row[self.ID]):
-                    continue
-                else:
-                    query = self.__get_query_dict(row, self.FIELD_NAMES)
-                    results = self.__create_api_request(query_dict=query)
-                    with jsonlines.open(results_filepath, "a") as writer:
-                        writer.write({row[self.ID]: results})
+        data = pd.read_csv(self.filepath)
+        for row_idx in tqdm(range(len(data))):
+            row = data.iloc[row_idx]
+            if self.__check_row(rspo_id=row[self.ID]):
+                continue
+            query = self.__get_query_dict(row, self.FIELD_NAMES)
+            results = self.__create_api_request(query_dict=query)
+            with jsonlines.open(results_filepath, "a") as writer:
+                writer.write({self.ID: int(row[self.ID]), "content": results})
+            time.sleep(self.timeout)
 
 
 if __name__ == "__main__":
