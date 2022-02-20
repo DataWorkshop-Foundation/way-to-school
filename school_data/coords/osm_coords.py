@@ -1,12 +1,16 @@
 import logging
 import os
 import time
-from typing import Dict, Iterable, Optional
+from typing import Dict, Iterable, Optional, Any, Hashable
 
 import jsonlines
 import pandas as pd
 import requests
 from tqdm import tqdm
+
+from pprint import pprint
+
+from helpers.np_encode import cast_to_serializable
 
 
 class CoordScraper:
@@ -18,26 +22,22 @@ class CoordScraper:
         "kod_pocztowy",
     ]
 
-    def __init__(self, filepath: str, timeout: Optional[int] = 1) -> None:
+    def __init__(self, timeout: int = 1,  checkpoint_steps: int = 100) -> None:
         """Class for download school coords from OSM.
 
         Parameters
         ----------
-        filepath : str
-            Filepath to jsonline file
-        timeout : Optional[int], optional
+        timeout : int
             Timeout between requests, by default 1 second
+        checkpoint_steps: int
+            Steps to perform between each results save
         """
 
-        assert os.path.exists(filepath), f"Provided {filepath} does not exist."
-
         self.timeout = timeout
-        self.filepath = filepath
-        self.ID = "numer_rspo"
-        self.api_results = None
+        self.checkpoint_steps = checkpoint_steps
 
     @staticmethod
-    def __get_query_dict(row: dict, field_names: Iterable[str]) -> Dict[str, str]:
+    def __get_query_dict(row: pd.Series, field_names: Iterable[str]) -> Dict[str, str]:
         return {field_name: str(row.get(field_name, "")) for field_name in field_names}
 
     @staticmethod
@@ -47,29 +47,68 @@ class CoordScraper:
         response = requests.get(f"https://photon.komoot.io/api/?q={query}").json()
         return response
 
-    def __check_row(self, rspo_id: int):
-        return rspo_id in self.api_results
+    def run(self, in_filepath: str, out_filepath: str, id_col: str = "numer_rspo"):
+        """Process csv with school data and save geocoding results in jsonlines format
 
-    def run(self, results_filepath: str):
-        if not os.path.exists(results_filepath):
-            with open(results_filepath, "w") as _:
-                pass
+        Parameters
+        ----------
+        in_filepath : str
+            Filepath to input csv file
+        out_filepath : str
+            Filepath to output jsonline file
+        id_col: str
+            Unique keys column name
+        """
 
-        with jsonlines.open(results_filepath, "r") as reader:
-            self.api_results = {item[self.ID] for item in reader}
+        assert os.path.exists(in_filepath), f"Provided {in_filepath=} does not exist."
+        data = pd.read_csv(in_filepath)
 
-        data = pd.read_csv(self.filepath)
+        if os.path.exists(out_filepath):
+            with jsonlines.open(out_filepath, "r") as reader:
+                api_results = {item[id_col]: item for item in reader}
+        else:
+            api_results = {}
+
         for row_idx in tqdm(range(len(data))):
             row = data.iloc[row_idx]
-            if self.__check_row(rspo_id=row[self.ID]):
+
+            if row[id_col] in api_results:
                 continue
+
             query = self.__get_query_dict(row, self.FIELD_NAMES)
-            results = self.__create_api_request(query_dict=query)
-            with jsonlines.open(results_filepath, "a") as writer:
-                writer.write({self.ID: int(row[self.ID]), "content": results})
+            query_results = self.__create_api_request(query_dict=query)
+
+            if query_results:
+                api_results[row[id_col]] = {id_col: cast_to_serializable(row[id_col]), "results": query_results}
+
             time.sleep(self.timeout)
+
+            if row_idx % self.checkpoint_steps == 0:
+                self.__save_results_jsonl(api_results, out_filepath)
+
+        self.__save_results_jsonl(api_results, out_filepath)
+
+    @staticmethod
+    def __save_results_jsonl(data: Dict[Hashable, Dict[Hashable, Any]], filepath: str):
+        pprint(data)
+        with jsonlines.open(filepath, "w") as writer:
+            writer.write_all(data.values())
 
 
 if __name__ == "__main__":
-    scraper = CoordScraper(filepath="data/school_prep.jsonln", timeout=1)
-    scraper.run("data/results.jsonln")
+    import argparse
+    import os
+
+    arg_parser = argparse.ArgumentParser(description='Geocode data with OSM API')
+    arg_parser.add_argument('--in_path', type=str, help='path to csv file to process', required=True)
+    arg_parser.add_argument('--out_path', type=str, help='path to jsonl output file', required=True)
+    arg_parser.add_argument('--id_col', type=str, default="numer_rspo", help='id column name', required=False)
+    arg_parser.add_argument('--timeout', type=int, default=1, required=False)
+    arg_parser.add_argument('--checkpoint_steps', type=int, default=100, required=False)
+    args = arg_parser.parse_args()
+
+    input_path = os.path.abspath(args.in_path)
+    output_path = os.path.abspath(args.out_path)
+
+    scraper = CoordScraper(timeout=args.timeout, checkpoint_steps=args.checkpoint_steps)
+    scraper.run(in_filepath=input_path, out_filepath=output_path, id_col=args.id_col)
