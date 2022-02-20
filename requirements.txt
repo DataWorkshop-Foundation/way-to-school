@@ -13,6 +13,7 @@ asttokens==2.0.5
 attrs==21.4.0
     # via
     #   fiona
+    #   jsonlines
     #   jsonschema
 backcall==0.2.0
     # via ipython
@@ -92,6 +93,8 @@ jinja2==3.0.3
     # via
     #   nbconvert
     #   notebook
+jsonlines==3.0.0
+    # via -r requirements.in
 jsonschema==4.4.0
     # via nbformat
 jupyter==1.0.0

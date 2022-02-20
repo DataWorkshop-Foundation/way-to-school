@@ -11,6 +11,7 @@ geo_data:
 
 # Environment
 requirements:
+	source venv/bin/activate
 	pip install -r requirements.txt
 
 # Linters
