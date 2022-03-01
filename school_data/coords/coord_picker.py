@@ -6,14 +6,15 @@ from tqdm import tqdm
 
 
 class DummyPicker:
-    def __init__(self, csv_filepath: str, coords_filepath: str):
+    def __init__(self, csv_filepath: str, coords_filepath: str, id_col):
         self.csv_filepath = csv_filepath
         self.coords_filepath = coords_filepath
+        self.id_col = id_col
 
         with jsonlines.open(self.coords_filepath, "r") as reader:
-            self.dataset = {row["numer_rspo"]: row["results"] for row in reader}
+            self.dataset = {row[self.id_col]: row["results"] for row in reader}
 
-    def get_coords(self, rspo_code: int):
+    def get_coords(self, rspo_code: int) -> Tuple[float, float]:
         if rspo_code in self.dataset.keys():
             row = self.dataset[rspo_code]
             if len(row["features"]) > 0:
@@ -27,7 +28,7 @@ class DummyPicker:
 
         for row_idx in tqdm(range(len(df))):
             df_row = df.iloc[row_idx]
-            values = self.get_coords(df_row["numer_rspo"])
+            values = self.get_coords(df_row[self.id_col])
             if values is None:
                 continue
 
@@ -39,5 +40,14 @@ class DummyPicker:
 
 
 if __name__ == "__main__":
-    picker = DummyPicker("data/school_prep.csv", "data/school_data.jsonln")
-    picker.process(checkpoint=50)
+    import argparse
+
+    arg_parser = argparse.ArgumentParser(description="Pick school coords from geocode data")
+    arg_parser.add_argument("--csv_in_path", type=str, help="path to csv file to process", required=True)
+    arg_parser.add_argument("--jsonln_in_path", type=str, help="path to jsonline file to process", required=True)
+    arg_parser.add_argument("--id_col", type=str, defaul="numer_rspo", help="id column name", required=False)
+    arg_parser.add_argument("--checkpoints_step", type=int, default=100, required=False)
+    args = arg_parser.parse_args()
+
+    picker = DummyPicker(csv_filepath=args.csv_in_path, coords_filepath=args.jsonln_in_path, id_col=args.id_col)
+    picker.process(checkpoint=args.checkpoints)
