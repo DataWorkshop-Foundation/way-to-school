@@ -1,56 +1,26 @@
-from typing import Tuple, Union
-
 import jsonlines
 import pandas as pd
 from tqdm import tqdm
 
 
 class BasePicker:
-    def __init__(self, csv_filepath: str, coords_filepath: str, id_col):
+    def __init__(self, csv_filepath: str, coords_filepath: str, id_col: int):
         self.csv_filepath = csv_filepath
         self.coords_filepath = coords_filepath
         self.id_col = id_col
         self.__create_coords_dataset()
 
-    def __create_coords_dataset(self):
+    def __create_coords_dataset(self) -> None:
         with jsonlines.open(self.coords_filepath, "r") as reader:
-            # self.dataset = {row[self.id_col]: row["results"] for row in reader}
-            # self.dataset = coords_data = {k: tuple(v["features"][0]["geometry"]["coordinates"]) for k,v in self.dataset.items() if v["features"]}
             self.dataset = {
                 row[self.id_col]: tuple(row["results"]["features"][0]["geometry"]["coordinates"])
                 for row in tqdm(reader, desc="Reading jsonl data...")
                 if row["results"]["features"]
             }
 
-    # def get_coords(self, rspo_code: int) -> Tuple[float, float]:
-    #     # if rspo_code in self.dataset.keys():
-    #     row = self.dataset.get(rspo_code)
-    #     if row is not None:
-    #         if len(row["features"]) > 0:
-    #             return row["features"][0]["geometry"]["coordinates"]
-
-    def process(self, checkpoint) -> None:
+    def process(self) -> None:
         df = pd.read_csv(self.csv_filepath)
-        # for col in ("lat", "lng"):
-        #     if col not in df:
-        #         df[col] = None
-
         df[["lat", "lon"]] = pd.DataFrame(df[self.id_col].map(self.dataset).to_list(), index=df.index)
-
-        # for row_idx, coord_idx in tqdm(enumerate(df[self.id_col].values)):
-            # df_row = df.iloc[row_idx]
-            # values = self.get_coords(df_row[self.id_col])
-
-            # values = self.get_coords(coord_idx)
-            # if values is None:
-            #     continue
-
-            # lat, lng = values
-            # df.iloc[row_idx, df.columns.get_indexer(["lat", "lng"])] = lat, lng
-
-            # if row_idx % checkpoint == 0:
-            #     df.to_csv(self.csv_filepath, index=False)
-
         df.to_csv(self.csv_filepath, index=False)
 
 
@@ -60,19 +30,13 @@ class SmarterPicker(BasePicker):
 
 
 if __name__ == "__main__":
-    # import argparse
+    import argparse
 
-    # arg_parser = argparse.ArgumentParser(description="Pick school coords from geocode data")
-    # arg_parser.add_argument("--csv_in_path", type=str, help="path to csv file to process", required=True)
-    # arg_parser.add_argument("--jsonln_in_path", type=str, help="path to jsonline file to process", required=True)
-    # arg_parser.add_argument("--id_col", type=str, defaul="numer_rspo", help="id column name", required=False)
-    # arg_parser.add_argument("--checkpoints_step", type=int, default=100, required=False)
-    # args = arg_parser.parse_args()
-    #
-    # picker = DummyPicker(csv_filepath=args.csv_in_path, coords_filepath=args.jsonln_in_path, id_col=args.id_col)
-    picker = BasePicker(
-        csv_filepath="/home/lsawaniewski/Documents/private/docs/DataWorkshop/DW_Olsztyn/repos/way-to-school/data/school_prep.csv",
-        coords_filepath="/home/lsawaniewski/Documents/private/docs/DataWorkshop/DW_Olsztyn/repos/way-to-school/data/school_data.jsonl",
-        id_col="numer_rspo"
-    )
-    picker.process(checkpoint=100)
+    arg_parser = argparse.ArgumentParser(description="Pick school coords from geocode data")
+    arg_parser.add_argument("--csv_in_path", type=str, help="path to csv file to process", required=True)
+    arg_parser.add_argument("--jsonl_in_path", type=str, help="path to jsonl file to process", required=True)
+    arg_parser.add_argument("--id_col", type=str, default="numer_rspo", help="id column name", required=False)
+    args = arg_parser.parse_args()
+
+    picker = BasePicker(csv_filepath=args.csv_in_path, coords_filepath=args.jsonl_in_path, id_col=args.id_col)
+    picker.process()
