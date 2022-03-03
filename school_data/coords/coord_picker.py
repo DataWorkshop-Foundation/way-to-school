@@ -4,28 +4,24 @@ from tqdm import tqdm
 
 
 class BasePicker:
-    def __init__(self, csv_filepath: str, coords_filepath: str, id_col: int):
-        self.csv_filepath = csv_filepath
-        self.coords_filepath = coords_filepath
-        self.id_col = id_col
-        self.__create_coords_dataset()
-
-    def __create_coords_dataset(self) -> None:
-        with jsonlines.open(self.coords_filepath, "r") as reader:
-            self.dataset = {
-                row[self.id_col]: tuple(row["results"]["features"][0]["geometry"]["coordinates"])
+    def __create_coords_dataset(self, coords_filepath: str, id_col: str) -> dict:
+        with jsonlines.open(coords_filepath, "r") as reader:
+            dataset = {
+                row[id_col]: tuple(row["results"]["features"][0]["geometry"]["coordinates"])
                 for row in tqdm(reader, desc="Reading jsonl data...")
                 if row["results"]["features"]
             }
+        return dataset
 
-    def process(self) -> None:
-        df = pd.read_csv(self.csv_filepath)
-        df[["lat", "lon"]] = pd.DataFrame(df[self.id_col].map(self.dataset).to_list(), index=df.index)
-        df.to_csv(self.csv_filepath, index=False)
+    def process(self, csv_filepath: str, coords_filepath: str, id_col: int) -> None:
+        dataset = self.__create_coords_dataset(coords_filepath=coords_filepath, id_col=id_col)
+        df = pd.read_csv(csv_filepath)
+        df[["lat", "lon"]] = pd.DataFrame(df[id_col].map(dataset).to_list(), index=df.index)
+        df.to_csv(csv_filepath, index=False)
 
 
 class SmarterPicker(BasePicker):
-    def __create_coords_dataset(self):
+    def __create_coords_dataset(self, coords_filepath: str, id_col: str) -> dict:
         raise NotImplementedError
 
 
@@ -38,5 +34,5 @@ if __name__ == "__main__":
     arg_parser.add_argument("--id_col", type=str, default="numer_rspo", help="id column name", required=False)
     args = arg_parser.parse_args()
 
-    picker = BasePicker(csv_filepath=args.csv_in_path, coords_filepath=args.jsonl_in_path, id_col=args.id_col)
-    picker.process()
+    picker = BasePicker()
+    picker.process(csv_filepath=args.csv_in_path, coords_filepath=args.jsonl_in_path, id_col=args.id_col)
