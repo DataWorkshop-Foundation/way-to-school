@@ -1,10 +1,12 @@
+from typing import Dict, Hashable, Tuple
+
 import jsonlines
 import pandas as pd
 from tqdm import tqdm
 
 
 class BasePicker:
-    def __create_coords_dataset(self, coords_filepath: str, id_col: str) -> dict:
+    def __create_coords_dataset(self, coords_filepath: str, id_col: str) -> Dict[Hashable, Tuple[float, float]]:
         with jsonlines.open(coords_filepath, "r") as reader:
             dataset = {
                 row[id_col]: tuple(row["results"]["features"][0]["geometry"]["coordinates"])
@@ -13,7 +15,7 @@ class BasePicker:
             }
         return dataset
 
-    def process(self, csv_filepath: str, coords_filepath: str, id_col: int) -> None:
+    def process(self, csv_filepath: str, coords_filepath: str, id_col: str) -> None:
         dataset = self.__create_coords_dataset(coords_filepath=coords_filepath, id_col=id_col)
         df = pd.read_csv(csv_filepath)
         df[["lat", "lon"]] = pd.DataFrame(df[id_col].map(dataset).to_list(), index=df.index)
@@ -21,7 +23,7 @@ class BasePicker:
 
 
 class SmarterPicker(BasePicker):
-    def __create_coords_dataset(self, coords_filepath: str, id_col: str) -> dict:
+    def __create_coords_dataset(self, coords_filepath: str, id_col: str) -> Dict[Hashable, Tuple[float, float]]:
         raise NotImplementedError
 
 
