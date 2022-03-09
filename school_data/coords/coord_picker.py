@@ -1,3 +1,4 @@
+import os.path
 from typing import Dict, Hashable, Tuple
 
 import jsonlines
@@ -16,6 +17,8 @@ class BasePicker:
         return dataset
 
     def process(self, csv_filepath: str, coords_filepath: str, id_col: str) -> None:
+        if not all([os.path.exists(csv_filepath), os.path.exists(coords_filepath)]):
+            raise FileNotFoundError
         dataset = self.__create_coords_dataset(coords_filepath=coords_filepath, id_col=id_col)
         df = pd.read_csv(csv_filepath)
         df[["lat", "lon"]] = pd.DataFrame(df[id_col].map(dataset).to_list(), index=df.index)
