@@ -1,5 +1,4 @@
 import logging
-
 import time
 from pprint import pprint
 from typing import Any, Dict, Hashable, Iterable

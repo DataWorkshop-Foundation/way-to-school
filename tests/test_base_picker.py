@@ -1,7 +1,5 @@
 import unittest
 
-import pandas as pd
-
 from school_data.coords.coord_picker import BasePicker
 
 
