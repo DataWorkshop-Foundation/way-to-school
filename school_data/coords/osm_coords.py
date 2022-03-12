@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 from pprint import pprint
 from typing import Any, Dict, Hashable, Iterable
@@ -58,8 +59,13 @@ class CoordScraper:
             Unique keys column name
         """
 
-        assert os.path.exists(in_filepath), f"Provided {in_filepath=} does not exist."
+        if not os.path.exists(in_filepath):
+            raise FileNotFoundError(f"Provided {in_filepath=} does not exist.")
+
         data = pd.read_csv(in_filepath)
+
+        if id_col not in data.columns:
+            raise KeyError(f"Wrong id_col")
 
         if os.path.exists(out_filepath):
             with jsonlines.open(out_filepath, "r") as reader:
