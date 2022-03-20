@@ -1,14 +1,12 @@
 import logging
-import os
 import time
-from typing import Dict, Iterable, Optional, Any, Hashable
+from pprint import pprint
+from typing import Any, Dict, Hashable, Iterable
 
 import jsonlines
 import pandas as pd
 import requests
 from tqdm import tqdm
-
-from pprint import pprint
 
 from helpers.np_encode import cast_to_serializable
 
@@ -22,7 +20,7 @@ class CoordScraper:
         "kod_pocztowy",
     ]
 
-    def __init__(self, timeout: int = 1,  checkpoint_steps: int = 100) -> None:
+    def __init__(self, timeout: int = 1, checkpoint_steps: int = 100) -> None:
         """Class for download school coords from OSM.
 
         Parameters
@@ -99,12 +97,12 @@ if __name__ == "__main__":
     import argparse
     import os
 
-    arg_parser = argparse.ArgumentParser(description='Geocode data with OSM API')
-    arg_parser.add_argument('--in_path', type=str, help='path to csv file to process', required=True)
-    arg_parser.add_argument('--out_path', type=str, help='path to jsonl output file', required=True)
-    arg_parser.add_argument('--id_col', type=str, default="numer_rspo", help='id column name', required=False)
-    arg_parser.add_argument('--timeout', type=int, default=1, required=False)
-    arg_parser.add_argument('--checkpoint_steps', type=int, default=100, required=False)
+    arg_parser = argparse.ArgumentParser(description="Geocode data with OSM API")
+    arg_parser.add_argument("--in_path", type=str, help="path to csv file to process", required=True)
+    arg_parser.add_argument("--out_path", type=str, help="path to jsonl output file", required=True)
+    arg_parser.add_argument("--id_col", type=str, default="numer_rspo", help="id column name", required=False)
+    arg_parser.add_argument("--timeout", type=int, default=1, required=False)
+    arg_parser.add_argument("--checkpoint_steps", type=int, default=100, required=False)
     args = arg_parser.parse_args()
 
     input_path = os.path.abspath(args.in_path)
