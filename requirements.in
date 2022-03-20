@@ -8,7 +8,7 @@ requests
 pandas
 tqdm
 jsonlines
-dvc[gdrive]
 scipy
 unidecode
 seaborn
+gdown
