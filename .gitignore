@@ -132,4 +132,6 @@ dmypy.json
 .idea
 
 # Data directories
-/data/
+/data/school_data.jsonl
+/data/school_prep.csv
+/data/admin_units_pl.geojson
